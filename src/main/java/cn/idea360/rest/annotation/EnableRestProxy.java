@@ -7,15 +7,15 @@ import org.springframework.context.annotation.Import;
 import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
+@Target({ ElementType.TYPE })
 @Documented
-@Import({RestClientRegistrar.class})
+@Import({ RestClientRegistrar.class })
 public @interface EnableRestProxy {
 
-    String[] value() default {};
+	String[] value() default {};
 
-    String[] basePackages() default {};
+	String[] basePackages() default {};
 
-    ProxyType proxyType() default ProxyType.PROVIDER;
+	ProxyType proxyType() default ProxyType.PROVIDER;
 
 }

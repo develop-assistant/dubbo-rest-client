@@ -39,151 +39,155 @@ import java.util.Set;
 @Slf4j
 public class RestClientRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware, EnvironmentAware {
 
-    private ResourceLoader resourceLoader;
+	private ResourceLoader resourceLoader;
 
-    private Environment environment;
+	private Environment environment;
 
-    @Override
-    public void setEnvironment(Environment environment) {
-        this.environment = environment;
-    }
+	@Override
+	public void setEnvironment(Environment environment) {
+		this.environment = environment;
+	}
 
-    @Override
-    public void setResourceLoader(ResourceLoader resourceLoader) {
-        this.resourceLoader = resourceLoader;
-    }
+	@Override
+	public void setResourceLoader(ResourceLoader resourceLoader) {
+		this.resourceLoader = resourceLoader;
+	}
 
-    @Override
-    public void registerBeanDefinitions(AnnotationMetadata metadata, BeanDefinitionRegistry registry) {
+	@Override
+	public void registerBeanDefinitions(AnnotationMetadata metadata, BeanDefinitionRegistry registry) {
 
-        Map<String, Object> annotationAttributes = metadata
-                .getAnnotationAttributes(EnableRestProxy.class.getCanonicalName());
-        ProxyType proxyType = (ProxyType) annotationAttributes.get("proxyType");
-        if (proxyType.equals(ProxyType.PROVIDER)) {
-            BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(ProxyApiController.class);
-            registry.registerBeanDefinition(beanDefinitionBuilder.getBeanDefinition().getBeanClassName(), beanDefinitionBuilder.getBeanDefinition());
-            return;
-        }
+		Map<String, Object> annotationAttributes = metadata
+				.getAnnotationAttributes(EnableRestProxy.class.getCanonicalName());
+		ProxyType proxyType = (ProxyType) annotationAttributes.get("proxyType");
+		if (proxyType.equals(ProxyType.PROVIDER)) {
+			BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder
+					.genericBeanDefinition(ProxyApiController.class);
+			registry.registerBeanDefinition(beanDefinitionBuilder.getBeanDefinition().getBeanClassName(),
+					beanDefinitionBuilder.getBeanDefinition());
+			return;
+		}
 
-        LinkedHashSet<BeanDefinition> candidateComponents = new LinkedHashSet<>();
+		LinkedHashSet<BeanDefinition> candidateComponents = new LinkedHashSet<>();
 
-        ClassPathScanningCandidateComponentProvider scanner = getScanner();
-        scanner.setResourceLoader(this.resourceLoader);
-        scanner.addIncludeFilter(new AnnotationTypeFilter(RestClient.class));
-        Set<String> basePackages = getBasePackages(metadata);
-        for (String basePackage : basePackages) {
-            candidateComponents.addAll(scanner.findCandidateComponents(basePackage));
-        }
-        for (BeanDefinition candidateComponent : candidateComponents) {
-            if (candidateComponent instanceof AnnotatedBeanDefinition) {
-                AnnotatedBeanDefinition beanDefinition = (AnnotatedBeanDefinition) candidateComponent;
-                AnnotationMetadata annotationMetadata = beanDefinition.getMetadata();
-                Assert.isTrue(annotationMetadata.isInterface(), "@RestClient can only be specified on an interface");
+		ClassPathScanningCandidateComponentProvider scanner = getScanner();
+		scanner.setResourceLoader(this.resourceLoader);
+		scanner.addIncludeFilter(new AnnotationTypeFilter(RestClient.class));
+		Set<String> basePackages = getBasePackages(metadata);
+		for (String basePackage : basePackages) {
+			candidateComponents.addAll(scanner.findCandidateComponents(basePackage));
+		}
+		for (BeanDefinition candidateComponent : candidateComponents) {
+			if (candidateComponent instanceof AnnotatedBeanDefinition) {
+				AnnotatedBeanDefinition beanDefinition = (AnnotatedBeanDefinition) candidateComponent;
+				AnnotationMetadata annotationMetadata = beanDefinition.getMetadata();
+				Assert.isTrue(annotationMetadata.isInterface(), "@RestClient can only be specified on an interface");
 
-                Map<String, Object> attributes = annotationMetadata
-                        .getAnnotationAttributes(RestClient.class.getCanonicalName());
+				Map<String, Object> attributes = annotationMetadata
+						.getAnnotationAttributes(RestClient.class.getCanonicalName());
 
-                registerRestClient(registry, annotationMetadata, attributes);
-            }
-        }
-    }
+				registerRestClient(registry, annotationMetadata, attributes);
+			}
+		}
+	}
 
-    private void registerRestClient(BeanDefinitionRegistry registry, AnnotationMetadata annotationMetadata, Map<String, Object> attributes) {
-        String className = annotationMetadata.getClassName();
-        log.info("@RestClient className: {}", className);
-        Class clazz = ClassUtils.resolveClassName(className, null);
-        ConfigurableBeanFactory beanFactory = registry instanceof ConfigurableBeanFactory
-                ? (ConfigurableBeanFactory) registry : null;
+	private void registerRestClient(BeanDefinitionRegistry registry, AnnotationMetadata annotationMetadata,
+			Map<String, Object> attributes) {
+		String className = annotationMetadata.getClassName();
+		log.info("@RestClient className: {}", className);
+		Class clazz = ClassUtils.resolveClassName(className, null);
+		ConfigurableBeanFactory beanFactory = registry instanceof ConfigurableBeanFactory
+				? (ConfigurableBeanFactory) registry : null;
 
-        RestClientFactoryBean factoryBean = new RestClientFactoryBean();
-        factoryBean.setBeanFactory(beanFactory);
-        factoryBean.setType(clazz);
-        BeanDefinitionBuilder definition = BeanDefinitionBuilder.genericBeanDefinition(clazz, () -> {
-            factoryBean.setUrl(getUrl(beanFactory, attributes));
-            return factoryBean.getObject();
-        });
-        definition.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_BY_TYPE);
-        definition.setLazyInit(true);
+		RestClientFactoryBean factoryBean = new RestClientFactoryBean();
+		factoryBean.setBeanFactory(beanFactory);
+		factoryBean.setType(clazz);
+		BeanDefinitionBuilder definition = BeanDefinitionBuilder.genericBeanDefinition(clazz, () -> {
+			factoryBean.setUrl(getUrl(beanFactory, attributes));
+			return factoryBean.getObject();
+		});
+		definition.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_BY_TYPE);
+		definition.setLazyInit(true);
 
-        AbstractBeanDefinition beanDefinition = definition.getBeanDefinition();
-        beanDefinition.setAttribute(FactoryBean.OBJECT_TYPE_ATTRIBUTE, className);
+		AbstractBeanDefinition beanDefinition = definition.getBeanDefinition();
+		beanDefinition.setAttribute(FactoryBean.OBJECT_TYPE_ATTRIBUTE, className);
 
-        registry.registerBeanDefinition(className, beanDefinition);
-    }
+		registry.registerBeanDefinition(className, beanDefinition);
+	}
 
-    private String getUrl(ConfigurableBeanFactory beanFactory, Map<String, Object> attributes) {
-        String url = resolve(beanFactory, (String) attributes.get("url"));
-        return getUrl(url);
-    }
+	private String getUrl(ConfigurableBeanFactory beanFactory, Map<String, Object> attributes) {
+		String url = resolve(beanFactory, (String) attributes.get("url"));
+		return getUrl(url);
+	}
 
-    static String getUrl(String url) {
-        if (StringUtils.hasText(url) && !(url.startsWith("#{") && url.contains("}"))) {
-            if (!url.contains("://")) {
-                url = "http://" + url;
-            }
-            try {
-                new URL(url);
-            }
-            catch (MalformedURLException e) {
-                throw new IllegalArgumentException(url + " is malformed", e);
-            }
-        }
-        return url;
-    }
+	static String getUrl(String url) {
+		if (StringUtils.hasText(url) && !(url.startsWith("#{") && url.contains("}"))) {
+			if (!url.contains("://")) {
+				url = "http://" + url;
+			}
+			try {
+				new URL(url);
+			}
+			catch (MalformedURLException e) {
+				throw new IllegalArgumentException(url + " is malformed", e);
+			}
+		}
+		return url;
+	}
 
-    private String resolve(ConfigurableBeanFactory beanFactory, String value) {
-        if (StringUtils.hasText(value)) {
-            if (beanFactory == null) {
-                return this.environment.resolvePlaceholders(value);
-            }
-            BeanExpressionResolver resolver = beanFactory.getBeanExpressionResolver();
-            String resolved = beanFactory.resolveEmbeddedValue(value);
-            if (resolver == null) {
-                return resolved;
-            }
-            Object evaluateValue = resolver.evaluate(resolved, new BeanExpressionContext(beanFactory, null));
-            if (evaluateValue != null) {
-                return String.valueOf(evaluateValue);
-            }
-            return null;
-        }
-        return value;
-    }
+	private String resolve(ConfigurableBeanFactory beanFactory, String value) {
+		if (StringUtils.hasText(value)) {
+			if (beanFactory == null) {
+				return this.environment.resolvePlaceholders(value);
+			}
+			BeanExpressionResolver resolver = beanFactory.getBeanExpressionResolver();
+			String resolved = beanFactory.resolveEmbeddedValue(value);
+			if (resolver == null) {
+				return resolved;
+			}
+			Object evaluateValue = resolver.evaluate(resolved, new BeanExpressionContext(beanFactory, null));
+			if (evaluateValue != null) {
+				return String.valueOf(evaluateValue);
+			}
+			return null;
+		}
+		return value;
+	}
 
-    protected ClassPathScanningCandidateComponentProvider getScanner() {
-        return new ClassPathScanningCandidateComponentProvider(false, this.environment) {
-            @Override
-            protected boolean isCandidateComponent(AnnotatedBeanDefinition beanDefinition) {
-                boolean isCandidate = false;
-                if (beanDefinition.getMetadata().isIndependent()) {
-                    if (!beanDefinition.getMetadata().isAnnotation()) {
-                        isCandidate = true;
-                    }
-                }
-                return isCandidate;
-            }
-        };
-    }
+	protected ClassPathScanningCandidateComponentProvider getScanner() {
+		return new ClassPathScanningCandidateComponentProvider(false, this.environment) {
+			@Override
+			protected boolean isCandidateComponent(AnnotatedBeanDefinition beanDefinition) {
+				boolean isCandidate = false;
+				if (beanDefinition.getMetadata().isIndependent()) {
+					if (!beanDefinition.getMetadata().isAnnotation()) {
+						isCandidate = true;
+					}
+				}
+				return isCandidate;
+			}
+		};
+	}
 
-    protected Set<String> getBasePackages(AnnotationMetadata importingClassMetadata) {
-        Map<String, Object> attributes = importingClassMetadata
-                .getAnnotationAttributes(EnableRestProxy.class.getCanonicalName());
+	protected Set<String> getBasePackages(AnnotationMetadata importingClassMetadata) {
+		Map<String, Object> attributes = importingClassMetadata
+				.getAnnotationAttributes(EnableRestProxy.class.getCanonicalName());
 
-        Set<String> basePackages = new HashSet<>();
-        for (String pkg : (String[]) attributes.get("value")) {
-            if (StringUtils.hasText(pkg)) {
-                basePackages.add(pkg);
-            }
-        }
-        for (String pkg : (String[]) attributes.get("basePackages")) {
-            if (StringUtils.hasText(pkg)) {
-                basePackages.add(pkg);
-            }
-        }
+		Set<String> basePackages = new HashSet<>();
+		for (String pkg : (String[]) attributes.get("value")) {
+			if (StringUtils.hasText(pkg)) {
+				basePackages.add(pkg);
+			}
+		}
+		for (String pkg : (String[]) attributes.get("basePackages")) {
+			if (StringUtils.hasText(pkg)) {
+				basePackages.add(pkg);
+			}
+		}
 
-        if (basePackages.isEmpty()) {
-            basePackages.add(ClassUtils.getPackageName(importingClassMetadata.getClassName()));
-        }
-        return basePackages;
-    }
+		if (basePackages.isEmpty()) {
+			basePackages.add(ClassUtils.getPackageName(importingClassMetadata.getClassName()));
+		}
+		return basePackages;
+	}
+
 }

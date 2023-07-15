@@ -14,46 +14,50 @@ import java.lang.reflect.Proxy;
 /**
  * @author cuishiying
  */
-public class RestClientFactoryBean implements FactoryBean<Object>, InitializingBean, ApplicationContextAware, BeanFactoryAware {
+public class RestClientFactoryBean
+		implements FactoryBean<Object>, InitializingBean, ApplicationContextAware, BeanFactoryAware {
 
-    private Class<?> type;
-    private String url;
-    private BeanFactory beanFactory;
-    private ApplicationContext applicationContext;
+	private Class<?> type;
 
-    @Override
-    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
-        this.beanFactory = beanFactory;
-    }
+	private String url;
 
-    @Override
-    public Object getObject() {
-        RestInvocationHandler<?> invocationHandler = new RestInvocationHandler<>(type, url);
-        return Proxy.newProxyInstance(type.getClassLoader(),
-                new Class[] {type}, invocationHandler);
-    }
+	private BeanFactory beanFactory;
 
-    @Override
-    public Class<?> getObjectType() {
-        return type;
-    }
+	private ApplicationContext applicationContext;
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
+	@Override
+	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+		this.beanFactory = beanFactory;
+	}
 
-    }
+	@Override
+	public Object getObject() {
+		RestInvocationHandler<?> invocationHandler = new RestInvocationHandler<>(type, url);
+		return Proxy.newProxyInstance(type.getClassLoader(), new Class[] { type }, invocationHandler);
+	}
 
-    @Override
-    public void setApplicationContext(ApplicationContext context) throws BeansException {
-        this.applicationContext = context;
-        this.beanFactory = context;
-    }
+	@Override
+	public Class<?> getObjectType() {
+		return type;
+	}
 
-    public void setType(Class<?> type) {
-        this.type = type;
-    }
+	@Override
+	public void afterPropertiesSet() throws Exception {
 
-    public void setUrl(String url) {
-        this.url = url;
-    }
+	}
+
+	@Override
+	public void setApplicationContext(ApplicationContext context) throws BeansException {
+		this.applicationContext = context;
+		this.beanFactory = context;
+	}
+
+	public void setType(Class<?> type) {
+		this.type = type;
+	}
+
+	public void setUrl(String url) {
+		this.url = url;
+	}
+
 }

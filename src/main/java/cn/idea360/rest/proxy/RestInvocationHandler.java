@@ -11,27 +11,27 @@ import java.lang.reflect.Method;
 @Slf4j
 public class RestInvocationHandler<T> implements InvocationHandler {
 
-    private final Class<T> interfaceType;
-    private final RequestTemplate requestTemplate;
+	private final Class<T> interfaceType;
 
-    public RestInvocationHandler(Class<T> interfaceType, String url) {
-        this.interfaceType = interfaceType;
-        this.requestTemplate = new RequestTemplate(url);
-    }
+	private final RequestTemplate requestTemplate;
 
-    @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        if (Object.class.equals(method.getDeclaringClass())) {
-            return method.invoke(this,args);
-        }
-        ProxyData proxyData = new ProxyData();
-        proxyData.setCls(interfaceType);
-        proxyData.setMethodName(method.getName());
-        proxyData.setParameterTypes(method.getParameterTypes());
-        proxyData.setArguments(args);
-        log.info("proxy data: {}", proxyData);
-        return requestTemplate.doRequest(proxyData, method.getGenericReturnType());
-    }
+	public RestInvocationHandler(Class<T> interfaceType, String url) {
+		this.interfaceType = interfaceType;
+		this.requestTemplate = new RequestTemplate(url);
+	}
 
+	@Override
+	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+		if (Object.class.equals(method.getDeclaringClass())) {
+			return method.invoke(this, args);
+		}
+		ProxyData proxyData = new ProxyData();
+		proxyData.setCls(interfaceType);
+		proxyData.setMethodName(method.getName());
+		proxyData.setParameterTypes(method.getParameterTypes());
+		proxyData.setArguments(args);
+		log.info("proxy data: {}", proxyData);
+		return requestTemplate.doRequest(proxyData, method.getGenericReturnType());
+	}
 
 }

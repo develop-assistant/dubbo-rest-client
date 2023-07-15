@@ -7,7 +7,7 @@
 
     <groupId>cn.idea360</groupId>
     <artifactId>dubbo-rest-client</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
 
     <name>dubbo-rest-client</name>
     <description>Http请求Dubbo接口</description>
@@ -77,7 +77,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.2.3</version>
+            <version>2.15.1</version>
         </dependency>
         <dependency>
             <groupId>jakarta.annotation</groupId>
